@@ -58,6 +58,9 @@ class ServerNode:
                                  self.map_server)
         self.resp = None
 
+        # Setup parameters
+        self.map_frame_id = rospy.get_param("~map_frame_id", 'utm')
+
     def map_server(self, req):
         """ GetGeographicMap service callback.
 
@@ -83,7 +86,7 @@ class ServerNode:
             self.resp.success = True
             self.resp.status = url
             self.resp.map.header.stamp = rospy.Time.now()
-            self.resp.map.header.frame_id = '/map'
+            self.resp.map.header.frame_id = self.map_frame_id
         return self.resp
 
     def run(self):
