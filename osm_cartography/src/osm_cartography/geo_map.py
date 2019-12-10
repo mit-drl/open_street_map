@@ -74,7 +74,7 @@ class GeoMap():
         # Initialize feature information.
         self.feature_ids = {}           # feature symbol table
         self.n_features = len(self.gmap.features)
-        for fid in xrange(self.n_features):
+        for fid in range(self.n_features):
             feat = self.gmap.features
             self.feature_ids[feat[fid].id.uuid] = fid
 
@@ -90,7 +90,7 @@ class GeoMap():
         """
         return self.gmap.header
 
-class GeoMapFeatures():
+class GeoMapFeatures(object):
     """
     :class:`GeoMapFeatures` provides a filtering iterator for the
     features in a :class:`osm_cartography.geo_map.GeoMap`.
@@ -151,7 +151,7 @@ class GeoMapFeatures():
         """Features vector length."""
         return len(self.gmap.gmap.features)
 
-    def next(self):
+    def __next__(self):
         """ Next matching feature.
 
         :returns: :class:`geodesy.wu_point.WuPoint` object for next point
@@ -162,3 +162,5 @@ class GeoMapFeatures():
             raise StopIteration
         self.iter_index = i + 1
         return self.gmap.gmap.features[i]
+
+    
