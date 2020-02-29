@@ -47,7 +47,10 @@ Class for manipulating GeographicMap data.
 .. _`std_msgs/Header`: http://ros.org/doc/api/std_msgs/html/msg/Header.html
 
 """
+from __future__ import unicode_literals
 
+from builtins import range
+from builtins import object
 PKG = 'osm_cartography'
 import roslib; roslib.load_manifest(PKG)
 
@@ -55,7 +58,7 @@ from geographic_msgs.msg import GeographicMap
 from geographic_msgs.msg import WayPoint
 from geometry_msgs.msg import Point
 
-class GeoMap():
+class GeoMap(object):
     """
     :class:`GeoMap` provides an internal
     `geographic_msgs/GeographicMap`_ representation.

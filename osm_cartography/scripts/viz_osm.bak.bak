@@ -39,11 +39,7 @@ Map server.
 """
 
 from __future__ import print_function
-from __future__ import unicode_literals
 
-from builtins import filter
-from builtins import str
-from builtins import object
 PKG_NAME = 'osm_cartography'
 import roslib; roslib.load_manifest(PKG_NAME)
 import rospy
@@ -68,7 +64,7 @@ from visualization_msgs.msg import MarkerArray
 from dynamic_reconfigure.server import Server as ReconfigureServer
 import osm_cartography.cfg.VizOSMConfig as Config
 
-class VizNode(object):
+class VizNode():
 
     def __init__(self):
         """ROS node to publish visualization markers for a GeographicMap.
@@ -106,16 +102,16 @@ class VizNode(object):
 
         # define arguments for displaying various feature types
         road_props = set(['bridge', 'highway', 'tunnel'])
-        fargs = [(lambda f: geodesy.props.match(f, road_props),
+        fargs = [(lambda(f): geodesy.props.match(f, road_props),
                   ColorRGBA(r=8., g=0.2, b=0.2, a=0.8),
                   "roads_osm"),
-                 (lambda f: geodesy.props.match(f, set(['building'])),
+                 (lambda(f): geodesy.props.match(f, set(['building'])),
                   ColorRGBA(r=0., g=0.3, b=0.7, a=0.8),
                   "buildings_osm"),
-                 (lambda f: geodesy.props.match(f, set(['railway'])),
+                 (lambda(f): geodesy.props.match(f, set(['railway'])),
                   ColorRGBA(r=0., g=0.7, b=.7, a=0.8),
                   "railroad_osm"),
-                 (lambda f: geodesy.props.match(f, set(['amenity',
+                 (lambda(f): geodesy.props.match(f, set(['amenity',
                                                          'landuse'])),
                   ColorRGBA(r=0., g=1., b=0., a=0.5),
                   "other_osm")]
@@ -164,7 +160,7 @@ class VizNode(object):
                bridge, tunnel, amenity, etc.
         """
         index = 0
-        for feature in filter(predicate,
+        for feature in itertools.ifilter(predicate,
                                          self.map.features):
             marker = Marker(header = self.map.header,
                             ns = namespace,

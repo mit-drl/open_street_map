@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
 # Copyright (C) 2012, Jack O'Quin
@@ -30,20 +30,52 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+#
+# Revision $Id$
 
-# OSM data visualization node dynamic configuration
+"""
+Request geographic information maps from Open Street Map server.
 
-from __future__ import unicode_literals
-from dynamic_reconfigure.parameter_generator_catkin import *
+This is just a toy node, useful for testing.
+"""
 
-# only includes parameters reconfigurable while running
+from __future__ import print_function
 
-gen = ParameterGenerator()
+PKG_NAME = 'osm_cartography'
+import roslib; roslib.load_manifest(PKG_NAME)
+import rospy
 
-#       Name, Type, Reconfiguration level, Description, Default, Min, Max
+import sys
 
-gen.add("map_url", str_t, 0x00000001,
-        "URL for locating XML map data (existing map, if empty).", "")
+from geodesy import bounding_box
 
-PACKAGE='osm_cartography'
-exit(gen.generate(PACKAGE, "viz_osm.py", "VizOSM"))
+from geographic_msgs.srv import GetGeographicMap
+
+def client_node(url):
+
+    rospy.init_node('osm_client')
+    rospy.wait_for_service('get_geographic_map')
+
+    try:
+        get_map = rospy.ServiceProxy('get_geographic_map', GetGeographicMap)
+        resp = get_map(url, bounding_box.makeGlobal())
+        if resp.success:
+            print(resp.map)
+        else:
+            print('get_geographic_map failed, status: ', str(resp.status))
+
+    except rospy.ServiceException, e:
+        print("Service call failed: " + str(e))
+
+if __name__ == '__main__':
+
+    url = ''
+    if len(sys.argv) == 2:
+        url = sys.argv[1]
+    else:
+        print('usage: osm_client <map_URL>')
+        sys.exit(-9)
+
+    try:
+        client_node(url)
+    except rospy.ROSInterruptException: pass

@@ -41,7 +41,14 @@ Route network path planner.
 .. _`uuid_msgs/UniqueID`: http://ros.org/doc/api/uuid_msgs/html/msg/UniqueID.html
 
 """
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from builtins import str
+from builtins import range
+from past.utils import old_div
+from builtins import object
 import numpy
 import math
 import geodesy.utm
@@ -61,7 +68,7 @@ class PlannerError(Exception):
 class NoPathToGoalError(PlannerError):
     """Exception raised when there is no path to the goal."""
 
-class Edge():
+class Edge(object):
     """
     :class:`Edge` stores graph edge data for a way point.
 
@@ -79,7 +86,7 @@ class Edge():
     def __str__(self):
         return str(self.end)+' '+str(self.seg.uuid)+' ('+str(self.h)+')'
 
-class Planner():
+class Planner(object):
     """
     :class:`Planner` plans a route through a RouteNetwork.
 
@@ -98,7 +105,7 @@ class Planner():
         self.points = geodesy.wu_point.WuPointSet(graph.points)
 
         # Create empty list of graph edges leaving each map point.
-        self.edges = [[] for wid in xrange(len(self.points))]
+        self.edges = [[] for wid in range(len(self.points))]
         for seg in self.graph.segments:
             index = self.points.index(seg.start.uuid)
             if index is not None:
@@ -116,7 +123,7 @@ class Planner():
 
     def __str__(self):
         val = '\n'
-        for i in xrange(len(self.edges)):
+        for i in range(len(self.edges)):
             val += str(i) + ':\n'
             for k in self.edges[i]:
                 val += '    ' + str(k) + '\n'
@@ -148,9 +155,9 @@ class Planner():
 
         # A* shortest path algorithm
         opened = [[0.0, start_idx]]
-        closed = [False for wid in xrange(len(self.points))]
+        closed = [False for wid in range(len(self.points))]
         closed[start_idx] = True
-        backpath = [None for wid in xrange(len(self.points))]
+        backpath = [None for wid in range(len(self.points))]
         while True:
             if len(opened) == 0:
                 raise NoPathToGoalError('No path from ' + req.start.uuid
@@ -213,7 +220,7 @@ class Planner():
         result = []
         try:
             (route_path, dist) = self._planner_seg(req.start, start_seg, req.goal, goal_seg)
-        except NoPathToGoalError, e:
+        except NoPathToGoalError as e:
             return result, self.graph.id, start_seg.id, goal_seg.id, -1
         start_utm = geodesy.utm.fromMsg(req.start)
         goal_utm = geodesy.utm.fromMsg(req.goal)
@@ -227,7 +234,7 @@ class Planner():
                 result.append(req.start)
             result.append(p.toMsg())
             # add only the endpoints of the segments
-            for index in xrange(len(route_path.segments)):
+            for index in range(len(route_path.segments)):
                 seg_id = route_path.segments[index]
                 seg = self._getSegment(seg_id)
 
@@ -316,9 +323,9 @@ class Planner():
 
         opened.append([length_start2seg_start, start__seg_start_idx])
 
-        closed = [0 for wid in xrange(len(self.points))]
+        closed = [0 for wid in range(len(self.points))]
         closed[start__seg_start_idx] = -1.
-        backpath = [None for wid in xrange(len(self.points))]
+        backpath = [None for wid in range(len(self.points))]
         reached_goal = None
         while True:
             if len(opened) == 0:
@@ -357,7 +364,7 @@ class Planner():
                 e = backpath[e][0]
                 # :TODO: sometimeswe we have an MemoryError
         except:
-            print "Error, count of segments: ", len(plan.segments)
+            print("Error, count of segments: ", len(plan.segments))
             raise
         assert(e == start__seg_start_idx or e == start__seg_end_idx)
         plan.segments.reverse()
@@ -489,11 +496,11 @@ class Planner():
         if rv_2 == 0.:
             raise ValueError('invalid segment length')
         try:
-            lamda = ((p*rv).sum() - (s*rv).sum()) / rv_2
+            lamda = old_div(((p*rv).sum() - (s*rv).sum()), rv_2)
             lot_p = s + lamda * rv
         except:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
         return geodesy.utm.UTMPoint(lot_p[0], lot_p[1], zone=utm_p.gridZone()[0], band=utm_p.gridZone()[1])
 
     @staticmethod

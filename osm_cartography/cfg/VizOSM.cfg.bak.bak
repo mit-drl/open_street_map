@@ -33,7 +33,6 @@
 
 # OSM data visualization node dynamic configuration
 
-from __future__ import unicode_literals
 from dynamic_reconfigure.parameter_generator_catkin import *
 
 # only includes parameters reconfigurable while running

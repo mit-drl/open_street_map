@@ -23,12 +23,21 @@ generate_dynamic_reconfigure_options(cfg/RouteNetwork.cfg)
 
 catkin_package(CATKIN_DEPENDS ${_ROS_PKG_DEPS})
 
-install(DIRECTORY scripts/
+catkin_install_python(PROGRAMS 
+        tests/test_planner.py
+        scripts/plan_route
+        scripts/route_network
+        scripts/rviz_goal
+        scripts/viz_plan
+        scripts/viz_routes
         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-        USE_SOURCE_PERMISSIONS)
+)
 
-install(DIRECTORY launch/ 
+install(DIRECTORY launch/
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
+
+install(FILES tests/planner.test
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/tests)
 
 # unit tests
 if (CATKIN_ENABLE_TESTING)

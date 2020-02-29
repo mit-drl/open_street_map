@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import unicode_literals
-from builtins import str
 PKG='route_network'
 
 import unittest

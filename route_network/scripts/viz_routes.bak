@@ -34,25 +34,20 @@
 # Revision $Id$
 
 """
-Visualize route plan for geographic map.
+Create route network messages for geographic information maps.
 """
-from __future__ import print_function
-from __future__ import unicode_literals
 
-from builtins import str
-from builtins import range
-from builtins import object
 PKG_NAME = 'route_network'
 import roslib; roslib.load_manifest(PKG_NAME)
 import rospy
 
 import sys
-import random
+import itertools
+import geodesy.props
 import geodesy.wu_point
 
 from geographic_msgs.msg import RouteNetwork
 from geographic_msgs.msg import RouteSegment
-from geographic_msgs.srv import GetRoutePlan
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import Vector3
@@ -60,101 +55,99 @@ from std_msgs.msg import ColorRGBA
 from visualization_msgs.msg import Marker
 from visualization_msgs.msg import MarkerArray
 
-try:
-    from geographic_msgs.msg import UniqueID
-except ImportError:
-    from uuid_msgs.msg import UniqueID
-
-class VizPlanNode(object):
+class RouteVizNode():
 
     def __init__(self):
-        """ROS node to visualize a route plan.
+        """ROS node to publish the route network graph for a GeographicMap.
         """
-        rospy.init_node('viz_plan')
+        rospy.init_node('viz_routes')
         self.graph = None
+        self.marks = None
 
         # advertise visualization marker topic
         self.pub = rospy.Publisher('visualization_marker_array',
                                    MarkerArray, latch=True, queue_size=10)
 
-        rospy.wait_for_service('get_geographic_map')
-        self.get_plan = rospy.ServiceProxy('get_route_plan', GetRoutePlan)
+        # refresh the markers every three seconds, making them last four.
+        self.timer_interval = rospy.Duration(3)
+        self.marker_life = self.timer_interval + rospy.Duration(1)
+        rospy.Timer(self.timer_interval, self.timer_callback)
 
         # subscribe to route network
         self.sub = rospy.Subscriber('route_network', RouteNetwork,
                                     self.graph_callback)
 
-        self.timer_interval = rospy.Duration(4)
-        self.marker_life = self.timer_interval + rospy.Duration(1)
-        rospy.Timer(self.timer_interval, self.timer_callback)
-
     def graph_callback(self, graph):
-        """Handle RouteNetwork message.
+        """Create visualization markers from a RouteNetwork graph.
 
-        :param graph: RouteNetwork message.
+        :param graph: RouteNetwork message
 
-        :post: self.graph = RouteNetwork message
-        :post: self.points = visualization markers message.
+        :post: self.marks = visualization markers message.
+        :post: self.graph = RouteNetwork message.
         """
-        self.points = geodesy.wu_point.WuPointSet(graph.points)
-        self.segment_ids = {}   # segments symbol table
-        for sid in range(len(graph.segments)):
-            self.segment_ids[graph.segments[sid].id.uuid] = sid
         self.graph = graph
+        self.marks = MarkerArray()
+        self.points = geodesy.wu_point.WuPointSet(graph.points)
 
-    def timer_callback(self, event):
-        """ Called periodically. """
-        if self.graph is None:
-            print('still waiting for graph')
-            return
+        self.mark_way_points(ColorRGBA(r=1., g=1., b=0., a=0.8))
+        self.mark_segments(ColorRGBA(r=1., g=1., b=0., a=0.8),
+                           ColorRGBA(r=1., g=0., b=1., a=0.8))
 
-        # select two different way points at random
-        idx0, idx1 = random.sample(range(len(self.graph.points)), 2)
-        start = self.graph.points[idx0].id.uuid
-        goal = self.graph.points[idx1].id.uuid
-        rospy.loginfo('plan from ' + start + ' to ' + goal)
+    def mark_segments(self, color1, color2):
+        """Create lines for segments.
 
-        try:
-            resp = self.get_plan(self.graph.id,
-                                 UniqueID(uuid=start),
-                                 UniqueID(uuid=goal))
-        except rospy.ServiceException as e:
-            rospy.logerr("Service call failed: " + str(e))
-        else:                           # get_map returned
-            if resp.success:
-                self.mark_plan(resp.plan)
-            else:
-                rospy.logerr('get_route_plan failed, status: '
-                             + str(resp.status))
-
-    def mark_plan(self, plan):
-        """Publish visualization markers for a RoutePath.
-
-        :param plan: RoutePath message
+        :param color1: RGBA value for one-way segment
+        :param color2: RGBA value for two-way segment
         """
-        marks = MarkerArray()
-        hdr = self.graph.header
-        hdr.stamp = rospy.Time.now()
         index = 0
-        for seg_msg in plan.segments:
-            marker = Marker(header = hdr,
-                            ns = 'plan_segments',
+        for segment in self.graph.segments:
+            color = color2
+            if geodesy.props.match(segment, set(['oneway'])):
+                color = color1
+            marker = Marker(header = self.graph.header,
+                            ns = 'route_segments',
                             id = index,
                             type = Marker.LINE_STRIP,
                             action = Marker.ADD,
-                            scale = Vector3(x=4.0),
-                            color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=0.8),
+                            scale = Vector3(x=2.),
+                            color = color,
                             lifetime = self.marker_life)
             index += 1
-            segment = self.graph.segments[self.segment_ids[seg_msg.uuid]]
             marker.points.append(self.points[segment.start.uuid].toPointXY())
             marker.points.append(self.points[segment.end.uuid].toPointXY())
-            marks.markers.append(marker)
+            self.marks.markers.append(marker)
 
-        self.pub.publish(marks)
+    def mark_way_points(self, color):
+        """Create slightly transparent disks for way-points.
+
+        :param color: disk RGBA value
+        """
+        index = 0
+        for wp in self.points:
+            marker = Marker(header = self.graph.header,
+                            ns = "route_waypoints",
+                            id = index,
+                            type = Marker.CYLINDER,
+                            action = Marker.ADD,
+                            scale = Vector3(x=2., y=2., z=0.2),
+                            color = color,
+                            lifetime = self.marker_life)
+            index += 1
+            # use easting and northing coordinates (ignoring altitude)
+            marker.pose.position = wp.toPointXY()
+            marker.pose.orientation = Quaternion(x=0., y=0., z=0., w=1.)
+            self.marks.markers.append(marker)
+
+    def timer_callback(self, event):
+        """ Called periodically to refresh route network visualization. """
+        if self.marks is not None:
+            now = rospy.Time.now()
+            for m in self.marks.markers:
+                m.header.stamp = now
+            self.pub.publish(self.marks)
     
 def main():
-    node_class = VizPlanNode()
+    node_class = RouteVizNode()
     try:
         rospy.spin()            # wait for messages
     except rospy.ROSInterruptException: pass

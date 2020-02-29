@@ -40,10 +40,7 @@ This is just a toy node, useful for testing.
 """
 
 from __future__ import print_function
-from __future__ import unicode_literals
 
-from builtins import str
-from builtins import object
 PKG_NAME = 'osm_cartography'
 import roslib; roslib.load_manifest(PKG_NAME)
 import rospy
@@ -53,7 +50,7 @@ from geographic_msgs.srv import GetGeographicMapResponse
 
 from osm_cartography import xml_map
 
-class ServerNode(object):
+class ServerNode:
     
     def __init__(self):
         rospy.init_node('osm_server')

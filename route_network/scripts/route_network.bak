@@ -34,11 +34,7 @@
 """
 Create route network messages for geographic information maps.
 """
-from __future__ import unicode_literals
 
-from builtins import filter
-from builtins import str
-from builtins import object
 PKG_NAME = 'route_network'
 import roslib; roslib.load_manifest(PKG_NAME)
 import rospy
@@ -107,7 +103,7 @@ def makeSeg(start, end, oneway=False):
         seg.props.append(KeyValue(key = 'oneway', value = 'yes'))
     return seg
 
-class RouteNetNode(object):
+class RouteNetNode():
 
     def __init__(self):
         """ROS node to publish the route network graph for a GeographicMap.
@@ -136,7 +132,7 @@ class RouteNetNode(object):
         self.graph = makeGraph(msg)
 
         # process each feature marked as a route
-        for feature in filter(is_route, self.map.features):
+        for feature in itertools.ifilter(is_route, self.map.features):
             oneway = is_oneway(feature)
             start = None
             for mbr in feature.components:

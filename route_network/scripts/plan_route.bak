@@ -38,10 +38,7 @@ Plan the shortest route through a geographic information network.
 
 :todo: add server for local GetPlan service.
 """
-from __future__ import unicode_literals
 
-from builtins import str
-from builtins import object
 PKG_NAME = 'route_network'
 import roslib; roslib.load_manifest(PKG_NAME)
 import rospy
@@ -62,7 +59,7 @@ from geographic_msgs.srv import GetGeoPathResponse
 
 import geodesy
 
-class RoutePlannerNode(object):
+class RoutePlannerNode():
 
     def __init__(self):
         """ROS node to provide a navigation plan graph for a RouteNetwork.
